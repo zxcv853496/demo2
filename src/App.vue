@@ -7,7 +7,13 @@
             <div class="form-group d-flex">
               <label for="cityName" class="mr-2 col-form-label text-right">縣市</label>
               <div class="flex-fill">
-                <select id="cityName" class="form-control"> </select>
+                <select id="cityName" class="form-control"
+                  v-model="select.city">
+                  <option value="">--select one--</option>
+                  <option value="c.CityName" v-for="c in cityName" :key="c.CityName">
+                    {{ c.CityName }}
+                  </option>
+                </select>
               </div>
             </div>
             <div class="form-group d-flex">
@@ -50,6 +56,7 @@
 
 <script>
 import L from 'leaflet';
+import cityName from '@/assets/cityName.json';
 
 let osmMap = {};
 
@@ -58,7 +65,11 @@ console.log(L);
 export default {
   name: 'App',
   data: () => ({
-    data: {},
+    data: [],
+    cityName,
+    select: {
+      city: '臺北市',
+    },
   }),
   components: {},
   mounted() {
@@ -75,6 +86,7 @@ export default {
       attribution:
         'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>',
     }).addTo(osmMap);
+    L.marker([25.03, 121.55]).addTo(osmMap);
   },
 };
 </script>
