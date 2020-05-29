@@ -8,9 +8,9 @@
               <label for="cityName" class="mr-2 col-form-label text-right">縣市</label>
               <div class="flex-fill">
                 <select id="cityName" class="form-control"
-                  v-model="select.city">
+                v-model="select.city" @change="removeMaker(); updateMap()">
                   <option value="">--select one--</option>
-                  <option value="c.CityName" v-for="c in cityName" :key="c.CityName">
+                  <option :value="c.CityName" v-for="c in cityName" :key="c.CityName">
                     {{ c.CityName }}
                   </option>
                 </select>
@@ -19,8 +19,14 @@
             <div class="form-group d-flex">
               <label for="area" class="mr-2 col-form-label text-right">地區</label>
               <div class="flex-fill">
-                <select id="area" class="form-control">
+                <select id="area" class="form-control"
+                v-model="select.area" @change="updateSelect">
                   <option value="">-- Select One --</option>
+                  <option :value="a.AreaName"
+                  v-for="a in cityName.find((city) => city.CityName === select.city).AreaList"
+                  :key="a.AreaName">
+                  {{ a.AreaName }}
+                  </option>
                 </select>
               </div>
             </div>
@@ -69,13 +75,46 @@ export default {
     cityName,
     select: {
       city: '臺北市',
+      area: '大安區',
     },
   }),
-  components: {},
+  methods: {
+    updateMap() {
+      const pharmacies = this.data.filter((pharmacy) => (
+        pharmacy.properties.county === this.select.city));
+      pharmacies.forEach((pharmacy) => {
+        const { properties, geometry } = pharmacy;
+        L.marker([
+          geometry.coordinates[1],
+          geometry.coordinates[0],
+        ]).addTo(osmMap).bindPopup(`
+          <strong>${properties.name}</strong> <br>
+          口罩剩餘:<strong>成人 - ${properties.mask_adult} /兒童 - ${properties.mask_child}</strong> <br>
+          地址: <a href="https://www.google.com.tw/maps/place/${properties.address}">${properties.address}</a> <br>
+          電話: ${properties.phone}<br>
+          <small>最後更新時間: ${properties.updated}</small>`);
+        console.log(properties);
+      });
+      this.penTo(pharmacies[0]);
+    },
+    removeMaker() {
+      osmMap.eachLayer((layer) => {
+        if (layer instanceof L.Marker) {
+          osmMap.removeLayer(layer);
+        }
+      });
+    },
+    penTo(item) {
+      const { properties, geometry } = item;
+      console.log(properties);
+      osmMap.panTo([geometry.coordinates[1], geometry.coordinates[0]]);
+    },
+  },
   mounted() {
     const url = 'https://raw.githubusercontent.com/kiang/pharmacies/master/json/points.json';
     this.$http.get(url).then((Response) => {
       this.data = Response.data.features;
+      this.updateMap();
     });
     osmMap = L.map('map', {
       center: [25.03, 121.55],
@@ -86,7 +125,6 @@ export default {
       attribution:
         'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>',
     }).addTo(osmMap);
-    L.marker([25.03, 121.55]).addTo(osmMap);
   },
 };
 </script>
